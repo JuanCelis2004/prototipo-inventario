@@ -1,0 +1,18 @@
+{
+  "name": "prototipo-inventario",
+  "version": "1.0.0",
+  "description": "Prototipo minimo del Sistema de Gestion de Inventarios (JC Instalaciones) - demuestra la arquitectura de extremo a extremo.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node db.js --seed"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

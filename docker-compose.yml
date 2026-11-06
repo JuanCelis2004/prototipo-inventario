@@ -1,0 +1,16 @@
+# Prototipo mínimo: un solo contenedor (API + SPA + SQLite embebido).
+# En producción se separaría en web (Nginx) + API (Node) + BD (MySQL), como en
+# el diagrama de despliegue de la documentación de arquitectura.
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=cambia-esta-clave-en-produccion
+    volumes:
+      - inventario_data:/app
+
+volumes:
+  inventario_data:

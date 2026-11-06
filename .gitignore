@@ -1,0 +1,5 @@
+node_modules/
+inventario.db
+inventario.db-journal
+*.log
+.env
