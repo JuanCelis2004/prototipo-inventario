@@ -1,19 +1,23 @@
 // server.js — Contenedor API REST (Node.js + Express) + sirve la SPA.
-// Punto de entrada del prototipo. Cablea las rutas con los dos modulos y la seguridad.
+// Punto de entrada: cablea las rutas con los modulos, la seguridad y el dashboard.
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import './db.js'; // crea el esquema y carga el seed al arrancar
-import { login, requireAuth, requireAdmin } from './auth.js';
-import { listarMateriales, crearMaterial, registrarMovimiento, historial } from './inventario.js';
+import { db } from './db.js';
+import { login, me, requireAuth, requireAdmin } from './auth.js';
+import {
+  listarMateriales, detalleMaterial, categorias, crearMaterial,
+  actualizarMaterial, registrarMovimiento, historial,
+} from './inventario.js';
 import { reporteStockBajo } from './alertas.js';
+import { dashboard } from './dashboard.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json());
 
-// Observabilidad basica: un id de correlacion por peticion + log.
+// Observabilidad: id de correlacion por peticion + log.
 app.use((req, res, next) => {
   req.id = randomUUID().slice(0, 8);
   res.setHeader('X-Request-Id', req.id);
@@ -22,22 +26,33 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Observabilidad: endpoint de salud ---
-app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+// Observabilidad: salud del servicio + conteos.
+app.get('/health', (_req, res) => {
+  const materiales = db.prepare('SELECT COUNT(*) AS n FROM materiales').get().n;
+  const movimientos = db.prepare('SELECT COUNT(*) AS n FROM movimientos').get().n;
+  res.json({ status: 'ok', uptime: Math.round(process.uptime()), materiales, movimientos });
+});
 
-// --- Seguridad: autenticacion ---
+// Seguridad.
 app.post('/api/auth/login', login);
+app.get('/api/me', requireAuth, me);
 
-// --- Modulo Inventario y Movimientos (protegido por JWT) ---
+// Dashboard / KPIs.
+app.get('/api/dashboard', requireAuth, dashboard);
+
+// Modulo Inventario y Movimientos.
+app.get('/api/categorias', requireAuth, categorias);
 app.get('/api/materiales', requireAuth, listarMateriales);
-app.post('/api/materiales', requireAuth, requireAdmin, crearMaterial); // solo administrador
+app.get('/api/materiales/:id', requireAuth, detalleMaterial);
+app.post('/api/materiales', requireAuth, requireAdmin, crearMaterial);
+app.patch('/api/materiales/:id', requireAuth, requireAdmin, actualizarMaterial);
 app.post('/api/movimientos', requireAuth, registrarMovimiento);
 app.get('/api/movimientos', requireAuth, historial);
 
-// --- Modulo Alertas y Reportes (protegido por JWT) ---
+// Modulo Alertas y Reportes.
 app.get('/api/reportes/stock-bajo', requireAuth, reporteStockBajo);
 
-// --- Frontend (SPA minima) servido por el mismo contenedor ---
+// Frontend (SPA) servido por el mismo contenedor.
 app.use(express.static(join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
