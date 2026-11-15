@@ -41,3 +41,14 @@ export function reporteStockBajo(_req, res) {
   const valor_reposicion = rows.reduce((s, m) => s + m.sugerencia_compra * m.costo_unitario, 0);
   res.json({ total: rows.length, valor_reposicion: Math.round(valor_reposicion), materiales: rows });
 }
+
+// GET /api/reportes/inventario.csv -> exporta el inventario como CSV descargable.
+export function exportarInventarioCSV(_req, res) {
+  const rows = db.prepare('SELECT * FROM materiales ORDER BY categoria, nombre').all().map(infoMaterial);
+  const cols = ['codigo', 'nombre', 'categoria', 'unidad', 'ubicacion', 'proveedor', 'stock', 'punto_reorden', 'estado', 'costo_unitario', 'valor_stock'];
+  const esc = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = [cols.join(',')].concat(rows.map((m) => cols.map((c) => esc(m[c])).join(','))).join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="inventario.csv"');
+  res.send('﻿' + csv); // BOM para que Excel respete los acentos
+}

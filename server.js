@@ -10,7 +10,7 @@ import {
   listarMateriales, detalleMaterial, categorias, crearMaterial,
   actualizarMaterial, registrarMovimiento, historial,
 } from './inventario.js';
-import { reporteStockBajo } from './alertas.js';
+import { reporteStockBajo, exportarInventarioCSV } from './alertas.js';
 import { dashboard } from './dashboard.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,6 +51,7 @@ app.get('/api/movimientos', requireAuth, historial);
 
 // Modulo Alertas y Reportes.
 app.get('/api/reportes/stock-bajo', requireAuth, reporteStockBajo);
+app.get('/api/reportes/inventario.csv', requireAuth, exportarInventarioCSV);
 
 // Frontend (SPA) servido por el mismo contenedor.
 app.use(express.static(join(__dirname, 'public')));
